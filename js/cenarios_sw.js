@@ -35,86 +35,111 @@ function telaStarWarsHub() {
 }
 
 function cenarioTatooine() {
-  // Ativa a música tema em looping
-  gerenciarMusica(somTatooine);
+  // Ativa a trilha sonora de Tatooine se ela existir
+  if (typeof somTatooine !== 'undefined' && somTatooine) gerenciarMusica(somTatooine);
 
-  // 1. Céu em Gradiente Rico (Inspirado nos exemplos: Roxo -> Vermelho -> Laranja -> Amarelo)
-  for (let y = 0; y < height; y++) {
-    let inter = y / height;
-    let c;
-    if (inter < 0.4) {
-      // Do Roxo escuro do topo para o Vermelho/Rosa do meio
-      c = lerpColor(color(35, 10, 35), color(180, 25, 50), inter / 0.4);
-    } else {
-      // Do Vermelho/Rosa para o Laranja/Amarelo do horizonte
-      c = lerpColor(color(180, 25, 50), color(240, 140, 50), (inter - 0.4) / 0.6);
-    }
+  // ==========================================
+  // CONFIGURAÇÃO DO TEMPO (BEM LENTO)
+  // ==========================================
+  let cicloTempo = (frameCount * 0.012) % height; 
+  let progressoPorDoSol = cicloTempo / height; // 0.0 (dia inicial) a 1.0 (noite profunda)
+
+  // 1. GRADIENTE DO CÉU (Fiel à imagem de referência)
+  // Transita do roxo escuro/preto no topo para o laranja vivo e depois azul escuro na noite
+  let corCeuTop = lerpColor(color(43, 19, 58), color(10, 5, 20), progressoPorDoSol);
+  let corCeuBottom = lerpColor(color(244, 114, 52), color(25, 12, 35), progressoPorDoSol);
+  
+  for (let y = 0; y < height * 0.75; y++) {
+    let inter = map(y, 0, height * 0.75, 0, 1);
+    let c = lerpColor(corCeuTop, corCeuBottom, inter);
     stroke(c);
     line(0, y, width, y);
   }
 
-  // 2. Estrelas discretas surgindo apenas no topo roxo do céu
-  fill(255, 255, 255, 180);
-  noStroke();
-  randomSeed(888); // Semente fixa para não piscarem freneticamente
-  for (let i = 0; i < 40; i++) {
-    let estrelaY = random(height * 0.25);
-    ellipse(random(width), estrelaY, random(1, 2.5));
+  // 2. OS SÓIS BINÁRIOS (Posições baseadas no pôster de referência)
+  let horizonteY = height * 0.75;
+  let sol1Y = (height * 0.38) + (cicloTempo * 0.6);
+  let sol2Y = (height * 0.45) + (cicloTempo * 0.5);
+  
+  // Sol Esquerdo (Branco Puro / Amarelado na borda)
+  if (sol1Y < horizonteY + 40) {
+    noStroke();
+    let pulso = sin(frameCount * 0.04) * 6;
+    fill(255, 255, 255, 30); // Brilho suave externo
+    ellipse(width * 0.58, sol1Y, width * 0.09 + pulso, width * 0.09 + pulso);
+    fill(255, 255, 255);
+    ellipse(width * 0.58, sol1Y, width * 0.06, width * 0.06);
   }
 
-  // 3. Sóis Gêmeos (Tamanhos e cores inspirados nos seus arquivos)
-  let centroX = width * 0.55;
-  let centroY = height * 0.45;
-  
-  // Sol Maior (Tatoo I - Esbranquiçado / Amarelo Claro)
-  fill(255, 250, 220);
-  ellipse(centroX, centroY, height * 0.22, height * 0.22);
-  
-  // Sol Menor (Tatoo II - Laranja/Avermelhado, mais abaixo e à direita)
-  fill(230, 70, 40);
-  ellipse(centroX + (height * 0.15), centroY + (height * 0.1), height * 0.12, height * 0.12);
+  // Sol Direito (Vermelho Puro / Alaranjado)
+  if (sol2Y < horizonteY + 30) {
+    noStroke();
+    let pulso2 = cos(frameCount * 0.04) * 4;
+    fill(217, 4, 41, 45); // Brilho avermelhado
+    ellipse(width * 0.74, sol2Y, width * 0.08 + pulso2, width * 0.08 + pulso2);
+    fill(217, 4, 41);
+    ellipse(width * 0.74, sol2Y, width * 0.055, width * 0.055);
+  }
 
-  // 4. Horizonte e Silhuetas Terrestres (Em corte totalmente escuro/vetorial)
-  let nivelHorizonte = height * 0.78;
-  
-  // Dunas suaves ao fundo
-  fill(45, 15, 20);
-  beginShape();
-  vertex(0, height);
-  bezierVertex(width * 0.3, nivelHorizonte - 40, width * 0.7, nivelHorizonte + 20, width, nivelHorizonte - 10);
-  vertex(width, height);
-  endShape(CLOSE);
-
-  // Solo plano frontal (Silhueta escura)
-  fill(20, 5, 10);
-  rect(0, nivelHorizonte, width, height - nivelHorizonte);
-
-  // 5. Estruturas icônicas de Tatooine (Casas em cúpula e Vaporizadores)
-  push();
-  translate(width * 0.25, nivelHorizonte); // Posicionado à esquerda
-  
-  // Casa do Luke (Cúpula)
-  fill(20, 5, 10);
-  arc(0, 5, height * 0.18, height * 0.18, PI, 0); // Desenha a meia-esfera da cabana
-  rect(height * 0.08, -height * 0.04, height * 0.03, height * 0.04); // Detalhe da entrada lateral
-  
-  // Vaporizador de Umidade (Antena fina à direita da casa)
-  stroke(20, 5, 10);
-  strokeWeight(3);
-  let baseAntena = height * 0.12;
-  line(baseAntena, 5, baseAntena, -height * 0.09); // Haste principal
-  strokeWeight(5);
-  line(baseAntena - 4, -height * 0.03, baseAntena + 4, -height * 0.03); // Anéis estruturais
-  line(baseAntena - 2, -height * 0.06, baseAntena + 2, -height * 0.06);
-  pop();
-
-  // Texto de identificação do cenário
+  // 3. SOLO PLANO DO DESERTO (Preto Puro minimalista da referência)
+  fill(12, 9, 15);
   noStroke();
-  fill(255, 200, 120, 180);
+  rect(0, horizonteY, width, height * 0.25);
+
+  // 4. ESTRUTURAS SILHUETADAS (Totalmente pretas como no pôster)
+  fill(12, 9, 15);
+  
+  // O Domo dos Lars (Casa do Luke à esquerda)
+  let domoW = min(width * 0.28, 220);
+  let domoH = domoW * 0.55;
+  let domoX = width * 0.22;
+  arc(domoX, horizonteY + 5, domoW, domoH * 2, PI, TWO_PI);
+  
+  // Pequeno anexo/entrada do domo à direita dele
+  rect(domoX + domoW * 0.38, horizonteY - domoH * 0.3, domoW * 0.15, domoH * 0.3);
+
+  // Vaporizador de Umidade (À extrema direita da imagem)
+  let vapX = width * 0.9;
+  let vapW = min(width * 0.015, 14);
+  rect(vapX - vapW/2, horizonteY - 80, vapW, 80); // Base da torre
+  rect(vapX - 2, horizonteY - 130, 4, 50);       // Antena fina superior
+  ellipse(vapX, horizonteY - 80, vapW * 1.6, 6);   // Anéis modulares
+  ellipse(vapX, horizonteY - 105, vapW * 1.3, 5);
+
+  // 5. ANIMAÇÃO DO LUKE OBSERVANDO E ENTRANDO (Controle Cinematográfico)
+  let lukeX = width * 0.46;
+  let lukeY = horizonteY;
+  let tamLuke = min(height * 0.05, 32);
+
+  // Lógica do tempo de tela:
+  if (progressoPorDoSol > 0.68 && progressoPorDoSol < 0.88) {
+    // Quando os sóis se escondem, Luke caminha em direção à entrada do domo
+    lukeX = map(progressoPorDoSol, 0.68, 0.88, width * 0.46, domoX + domoW * 0.45);
+    lukeY = horizonteY + sin(frameCount * 0.25) * 1.5; // Balanço sutil dos passos
+  } else if (progressoPorDoSol >= 0.88) {
+    // Entrou na residência subterrânea
+    lukeX = -999;
+  }
+
+  // Renderização da silhueta do Luke
+  if (lukeX > 0) {
+    fill(12, 9, 15);
+    stroke(12, 9, 15);
+    strokeWeight(1);
+    
+    // Cabeça
+    ellipse(lukeX, lukeY - tamLuke, tamLuke * 0.28, tamLuke * 0.28);
+    // Corpo/Túnica
+    triangle(lukeX, lukeY - tamLuke * 0.8, lukeX - tamLuke * 0.18, lukeY, lukeX + tamLuke * 0.18, lukeY);
+  }
+
+  // 6. DETALHES DE IDENTIFICAÇÃO
+  noStroke();
+  fill(255, 215, 0, 140);
   textAlign(RIGHT, BOTTOM);
-  textSize(16);
+  textSize(15);
   textStyle(BOLD);
-  text("CENÁRIO I: OS SÓIS GÊMEOS DE TATOOINE", width - 25, height - 25);
+  text("TATOOINE: THE TWIN SUNS", width - 25, height - 25);
 
   desenharBotaoVoltar("star_wars_hub");
 }

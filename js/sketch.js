@@ -7,10 +7,12 @@ let tempoSom = 0;
 
 let somTatooine;
 let somImperial;
+let somMilano;    
+let somCassette;  
 let musicaAtual = null;
 
-// 1. PRELOAD VAZIO (Essencial para não travar arquivos locais)
 function preload() {
+  // 1. PRELOAD VAZIO (Essencial para não travar arquivos locais)
 }
 
 // 2. LOGICA DE GERENCIAMENTO COM AUDIO NATIVO
@@ -37,15 +39,19 @@ function gerenciarMusica(musicaDesejada) {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   
-  // Criando os áudios nativos do JavaScript (burlar 100% o bloqueio local)
+  // Criando os áudios nativos de Star Wars
   somTatooine = new Audio('audios/tatooine.mp3');
   somImperial = new Audio('audios/imperial.mp3');
   
-  // Ativa a repetição automática (looping) em ambos
+  // CORRIGIDO: Criando os áudios nativos de Guardiões da Galáxia
+  somMilano = new Audio('audios/milano.mp3');
+  somCassette = new Audio('audios/cassette.mp3');
+  
+  // Ativando a repetição automática (looping) em todas as músicas
   somTatooine.loop = true;
-  somImperial = true; // Ajustado para a propriedade correta nativa
-  somImperial = new Audio('audios/imperial.mp3'); 
-  somImperial.loop = true; 
+  somImperial.loop = true;
+  somMilano.loop = true;
+  somCassette.loop = true;
   
   // Inicialização das estrelas de fundo do menu
   for (let i = 0; i < numEstrelas; i++) {
