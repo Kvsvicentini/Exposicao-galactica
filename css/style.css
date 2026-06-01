@@ -1,31 +1,13 @@
-/* Configuração para a arte ocupar a tela toda */
-body { 
-  margin: 0; 
-  overflow: hidden; 
-  background-color: #111; 
-  font-family: Arial, sans-serif;
-}
-      
-/* Caixinha estilizada com informações sobre a exposição */
-.painel-introducao {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: white;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.75);
-  padding: 15px 30px;
-  border-radius: 8px;
-  border: 1px solid #0096ff;
-  pointer-events: none; /* Faz o clique do mouse passar direto para o p5.js */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  /* Remove as barras de rolagem */
+  background-color: #050510;
 }
 
-h1 {
-  margin: 0 0 5px 0; 
-  font-size: 24px;
-}
-
-p {
-  margin: 0; font-size: 14px; color: #ccc;
+canvas {
+  display: block;
+  /* Remove espaçamentos fantasmas embaixo do canvas */
 }
