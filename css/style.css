@@ -11,3 +11,33 @@ canvas {
   display: block;
   /* Remove espaçamentos fantasmas embaixo do canvas */
 }
+/* Regras aplicadas apenas para telas de celulares (até 768px de largura) */
+@media screen and (max-width: 768px) {
+    
+    /* 1. Ajuste os blocos que ficam lado a lado para ficarem um abaixo do outro */
+    .sua-classe-de-container, .grid-layout, .flex-layout {
+        flex-direction: column !important;
+        display: block;
+    }
+
+    /* 2. Garanta que as imagens não passem do limite da tela */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* 3. Reduza o tamanho de fontes muito grandes (como títulos galácticos) */
+    h1 {
+        font-size: 24px; /* Ajuste conforme achar melhor */
+    }
+    h2 {
+        font-size: 20px;
+    }
+
+    /* 4. Remova margens fixas muito grandes que empurram o conteúdo para o lado */
+    .seu-conteudo {
+        width: 100%;
+        padding: 10px;
+        margin: 0;
+    }
+}

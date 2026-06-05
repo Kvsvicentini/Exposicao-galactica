@@ -8,6 +8,7 @@ let aneisPortal = [];
 
 let somTatooine;
 let somImperial;
+let milano;
 let musicaAtual = null;
 
 let playlistGG = [];         // Array que guardará os arquivos e os nomes das músicas
@@ -63,14 +64,17 @@ function setup() {
   somImperial = new Audio('audios/imperial.mp3');
   somTatooine.loop = true;
   somImperial.loop = true;
+
+  milano = new Audio ('audios/somMilano.mp3')
+  milano.loop = true
   
   // --- MONTAGEM DA PLAYLIST RETRÔ DOS GUARDIÕES ---
   playlistGG = [
-    { audio: new Audio('audios/milano.mp3'), titulo: "Cherry Bomb" },
+    { audio: new Audio('audios/Cherry.mp3'), titulo: "Cherry Bomb" },
     { audio: new Audio('audios/cassette.mp3'), titulo: "Come and Get Your Love" },
-    { audio: new Audio('audios/Hooked on a Feeling'), titulo: "Hooked on a Feeling" }, 
+    { audio: new Audio('audios/Hooked On A Feeling.mp3'), titulo: "Hooked on a Feeling" }, 
     { audio: new Audio('audios/You Back.mp3'), titulo: "I Want You Back" },
-    { audio: new Audio('audios/Mr.Blue Sky'), titulo: "Mr.Blue Sky" }
+    { audio: new Audio('audios/Mr. Blue Sky.mp3'), titulo: "Mr.Blue Sky" }
   ];
   
   // Configuração para detectar o fim de cada música e pular automaticamente

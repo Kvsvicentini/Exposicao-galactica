@@ -26,6 +26,12 @@ function telaGuardiansHub() {
   if (irParaMilano && mouseIsPressed) {
     estado = "gg_milano";
     mouseIsPressed = false;
+
+    // === CORREÇÃO: Inicia a música aqui, apenas uma vez no clique ===
+    if (typeof milano !== 'undefined') {
+      gerenciarMusica(milano);
+      milano.play().catch(e => console.log("Interação necessária para áudio:", e));
+    }
   }
 
   // Botão para o Cenário do Toca-Fitas
@@ -39,7 +45,7 @@ function telaGuardiansHub() {
 // --- 2. CENÁRIO I: A MILANO E AS ÓRBITAS ESTILIZADAS ---
 function cenarioMilano() {
   // Ativa o som dos Guardiões (vamos configurar a variável já já no sketch.js)
-  if (typeof somMilano !== 'undefined') gerenciarMusica(somMilano);
+  if (typeof milano !== 'undefined') gerenciarMusica(milano);
 
   // Fundo Espacial comNeblina Rosa/Roxa igual à ilustração fornecida
   background(15, 12, 22);
@@ -165,7 +171,7 @@ function cenarioMilano() {
 
 // --- 3. CENÁRIO II: O DECK DO TOCA-FITAS (AWESOME MIX VOL. 2) ---
 function cenarioCassette() {
-  if (typeof somCassette !== 'undefined' && somCassette) gerenciarMusica(somCassette);
+  
 
   // 1. Textura Base de Madeira
   background(62, 39, 24); 
@@ -358,7 +364,19 @@ function cenarioCassette() {
   textStyle(BOLD);
   text("CENÁRIO II: AWESOME MIX CASSETTE PLAYER", width - 25, height - 25);
 
-  desenharBotaoVoltar("guardians_hub");
+  // --- BOTÃO VOLTAR COM DESLIGAMENTO DO RÁDIO ---
+  let clicouVoltar = criarBotao(25, 25, 90, 35, "◄ Voltar", color(40, 40, 60), color(70, 70, 110));
+  if (clicouVoltar && mouseIsPressed) {
+    estado = "guardians_hub";
+    mouseIsPressed = false; 
+
+    // Se houver uma playlist configurada e o rádio estiver ativo, pausa o som atual
+    if (typeof playlistGG !== 'undefined' && playlistGG.length > 0) {
+      playlistGG[indiceMusicaAtual].audio.pause();
+      playlistGG[indiceMusicaAtual].audio.currentTime = 0; // Opcional: reseta para o começo da faixa
+    }
+    tocandoGG = false; // Desliga o status de reprodução (para os ponteiros do VU e engrenagens)
+  }
 }
 
 // Função auxiliar para renderizar os visores analógicos com ponteiro móvel
