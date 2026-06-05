@@ -101,9 +101,9 @@ function cenarioMilano() {
   strokeWeight(width * 0.18); // Faixa diagonal larga igual à imagem
   line(inicioX, inicioY, fimX, fimY);
 
-  // ==========================================
+
   // CÁLCULO DA ANIMAÇÃO VIVA DA MILANO
-  // ==========================================
+ 
   let flutuacao = sin(frameCount * 0.08) * 8; // Flutuação suave de subida/descida
   let tremor = random(-1.2, 1.2);            // Vibração mecânica de alta velocidade
 
@@ -229,7 +229,7 @@ function cenarioCassette() {
   textAlign(CENTER, CENTER);
   textSize(max(12, rotH * 0.2));
   textStyle(ITALIC);
-  text("Awesome Mix Vol. 2", rotX + rotW/2, rotY + rotH/2);
+  text(playlistGG[indiceMusicaAtual].titulo, rotX + rotW/2, rotY + rotH/2);
 
   // 5. Orifícios das Bobinas de Engrenagem
   let centroEsquerdoX = cX + cW * 0.32;
@@ -249,29 +249,106 @@ function cenarioCassette() {
     line(centroEsquerdoX, bobinaY, centroEsquerdoX + cos(a)*(bobinaDiam/2), bobinaY + sin(a)*(bobinaDiam/2));
     line(centroDireitoX, bobinaY, centroDireitoX + cos(a)*(bobinaDiam/2), bobinaY + sin(a)*(bobinaDiam/2));
   }
-
-  // 6. Botões Mecânicos do Player Inferior
-  let btnW = deckW / 6;
-  let btnH = 25;
+  //  SISTEMA DE RÁDIO INTERATIVO E FUNCIONAL 
+  let btnW = deckW / 6.5;
+  let btnH = 30;
   let btnY = deckY + deckH - btnH - 15;
+  let espacamento = 8;
+  
+  // Centraliza o bloco dos 5 botões na largura do deck dinamicamente
+  let startX = deckX + (deckW - (5 * btnW + 4 * espacamento)) / 2;
 
-  for(let i = 0; i < 5; i++) {
-    let bx = deckX + (deckW * 0.08) + (i * (btnW + 5));
+  // Mapeamento dos botões físicos do rádio e suas funções
+  let botoesRadio = [
+    { txt: "◀◀", acao: "retroceder" },
+    { txt: "▶",  acao: "play" },
+    { txt: "⏸",  acao: "pause" },
+    { txt: "■",  acao: "stop" },
+    { txt: "▶▶", acao: "avancar" }
+  ];
+
+  // Pega qual áudio está ativo no índice atual da playlist
+  let musicaRolando = playlistGG[indiceMusicaAtual].audio;
+
+  for (let i = 0; i < botoesRadio.length; i++) {
+    let bx = startX + (i * (btnW + espacamento));
     let hoverBtn = mouseX > bx && mouseX < bx + btnW && mouseY > btnY && mouseY < btnY + btnH;
     
-    fill(hoverBtn ? 140 : 100);
-    stroke(180);
+    // Feedback visual: Muda a cor se estiver ativo ou clicado
+    if (botoesRadio[i].acao === "play" && tocandoGG) {
+      fill(0, 229, 255, 200); // Brilha azul neon se o som estiver rolando
+    } else if (botoesRadio[i].acao === "pause" && !tocandoGG && musicaRolando.currentTime > 0) {
+      fill(236, 64, 122, 200); // Brilha rosa se estiver pausada no meio da música
+    } else {
+      fill(hoverBtn ? 140 : 90);
+    }
+
+    stroke(hoverBtn ? 255 : 150);
     strokeWeight(1.5);
-    rect(bx, btnY, btnW, btnH, 2);
+    rect(bx, btnY, btnW, btnH, 4);
     
-    stroke(220);
-    line(bx + 2, btnY + 3, bx + btnW - 2, btnY + 3);
+    // Efeito de relevo metálico superior no botão
+    stroke(220); line(bx + 2, btnY + 3, bx + btnW - 2, btnY + 3);
+
+    // Renderiza o caractere do controle (Play, Pause, etc)
+    noStroke();
+    fill(hoverBtn ? 255 : 210);
+    textAlign(CENTER, CENTER);
+    textSize(13);
+    textStyle(BOLD);
+    text(botoesRadio[i].txt, bx + btnW/2, btnY + btnH/2);
+
+    // --- PROCESSAMENTO DO CLIQUE DO CONTROLE ---
+    if (hoverBtn && mouseIsPressed) {
+      mouseIsPressed = false; // Trava o clique do frame para não disparar em loop
+
+      if (botoesRadio[i].acao === "play") {
+        gerenciarMusica(null); // Desliga outras trilhas de fundo se houver
+        musicaRolando.play().catch(e => console.log("Aguardando interação inicial do usuário."));
+        tocandoGG = true;
+      } 
+      else if (botoesRadio[i].acao === "pause") {
+        musicaRolando.pause();
+        tocandoGG = false;
+      } 
+      else if (botoesRadio[i].acao === "stop") {
+        musicaRolando.pause();
+        musicaRolando.currentTime = 0; // Volta para o início da música
+        tocandoGG = false;
+      } 
+      else if (botoesRadio[i].acao === "avancar" || botoesRadio[i].acao === "retroceder") {
+        // Pausa e reseta a música atual antes de mudar de faixa
+        musicaRolando.pause();
+        musicaRolando.currentTime = 0;
+
+        if (botoesRadio[i].acao === "avancar") {
+          // Vai para o próximo índice (e volta pro 0 se chegar ao fim da lista)
+          indiceMusicaAtual = (indiceMusicaAtual + 1) % playlistGG.length;
+        } else {
+          // Volta uma música (e se for menor que 0, vai para o final da lista)
+          indiceMusicaAtual = (indiceMusicaAtual - 1 + playlistGG.length) % playlistGG.length;
+        }
+
+        // Atualiza a variável local com o novo arquivo de áudio da lista
+        musicaRolando = playlistGG[indiceMusicaAtual].audio;
+
+        // Se o player já estava ativo, começa a tocar a nova faixa automaticamente
+        if (tocandoGG) {
+          musicaRolando.play().catch(e => console.log(e));
+        }
+      }
+    }
   }
 
-  // Medidores analógicos de VU nos locais corretos (Displays amarelos)
+  // --- ANIMAÇÃO DO VU DINÂMICO ---
   let vuSize = 65;
-  desenharVU(deckX + 35, deckY + deckH * 0.68, vuSize);
-  desenharVU(deckX + deckW - 35 - vuSize, deckY + deckH * 0.68, vuSize);
+  // Se estiver tocando, gera oscilação rítmica baseada em noise(), se não, ponteiro fica no zero
+  let intensidadeVU = tocandoGG ? noise(frameCount * 0.18) * vuSize : 4;
+  
+  desenharVU(deckX + 35, deckY + deckH * 0.68, vuSize, intensidadeVU);
+  desenharVU(deckX + deckW - 35 - vuSize, deckY + deckH * 0.68, vuSize, intensidadeVU);
+
+ 
 
   // Identificação do cenário
   noStroke();
@@ -285,15 +362,21 @@ function cenarioCassette() {
 }
 
 // Função auxiliar para renderizar os visores analógicos com ponteiro móvel
-function desenharVU(x, y, sz) {
-  fill(225, 200, 40); // Amarelo retrô aquecido
-  stroke(40);
-  strokeWeight(2);
-  rect(x, y, sz, sz * 0.6, 3);
+function desenharVU(x, y, tamanho, valorDinamico = 5) {
+  fill(30, 25, 20);
+  stroke(100);
+  rect(x, y, tamanho, tamanho * 0.6, 3);
   
-  // Ponteiro dinâmico usando o frameCount para simular a música batendo
-  stroke(0);
-  strokeWeight(1.5);
-  let angVU = map(sin(frameCount * 0.2 + x), -1, 1, -PI * 0.75, -PI * 0.25);
-  line(x + sz/2, y + sz * 0.55, x + sz/2 + cos(angVU)*(sz*0.48), y + sz * 0.55 + sin(angVU)*(sz*0.48));
+  // Linha do arco analógico
+  noFill();
+  stroke(255, 193, 7, 90);
+  arc(x + tamanho/2, y + tamanho * 0.55, tamanho * 0.8, tamanho * 0.8, PI, TWO_PI);
+  
+  // Ponteiro vermelho que oscila rítmico
+  stroke(255, 50, 50);
+  strokeWeight(2);
+  let anguloVU = map(valorDinamico, 0, tamanho, PI + 0.3, TWO_PI - 0.3);
+  let px = x + tamanho/2 + cos(anguloVU) * (tamanho * 0.35);
+  let py = y + tamanho * 0.55 + sin(anguloVU) * (tamanho * 0.35);
+  line(x + tamanho/2, y + tamanho * 0.55, px, py);
 }

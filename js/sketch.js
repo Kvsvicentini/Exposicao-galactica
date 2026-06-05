@@ -1,19 +1,26 @@
 let estado = "inicio"; 
 
 let estrelas = [];
-let numEstrelas = 100;
+let numEstrelas = 1000;
 let anguloNave = 0;
+let trilhaMouse = [];
+let aneisPortal = [];
 
 let somTatooine;
 let somImperial;
-let somMilano;    
-let somCassette;  
 let musicaAtual = null;
+
+let playlistGG = [];         // Array que guardará os arquivos e os nomes das músicas
+let indiceMusicaAtual = 0;   // Controla qual música da lista está selecionada
+let tocandoGG = false;       // Diz se o rádio está ativo (tocando) ou pausado
 
 // Variáveis para as naves decorativas animadas do Menu Star Wars Hub
 let navesHub = [
-  { x: -100, y: 180, velocidade: 2.0, tamanho: 0.4, tipo: "xwing", offset: 0 },
-  { x: -350, y: 320, velocidade: 2.8, tamanho: 0.35, tipo: "falcon", offset: Math.PI }
+  // A X-Wing e a TIE Fighter começam na mesma altura (será calculada dinamicamente no setup/draw)
+  { x: -100, y: 0, velocidade: 3.0, tamanho: 0.4, tipo: "xwing", offset: 0 },
+  { x: -220, y: 0, velocidade: 3.0, tamanho: 0.4, tipo: "tiefighter", offset: 0 }, 
+  // A Falcon passará sozinha mais embaixo
+  { x: -350, y: 0, velocidade: 4.0, tamanho: 0.35, tipo: "falcon", offset: Math.PI }
 ];
 
 // Variáveis para o efeito de fitas flutuantes no Menu Guardiões da Galáxia
@@ -25,10 +32,21 @@ function preload() {
 
 function gerenciarMusica(musicaDesejada) {
   if (musicaAtual === musicaDesejada) return;
+  
+  // Se houver uma música de fundo padrão tocando, ela é pausada
   if (musicaAtual) {
     musicaAtual.pause();
     musicaAtual.currentTime = 0;
   }
+  
+  // Se sairmos do deck de fita cassete, força a fita a pausar
+  if (musicaDesejada === null && estado !== "gg_cassette") {
+    if (playlistGG.length > 0 && tocandoGG) {
+      playlistGG[indiceMusicaAtual].audio.pause();
+      tocandoGG = false;
+    }
+  }
+
   if (musicaDesejada) {
     musicaDesejada.play().catch(e => {
       console.log("Áudio aguarda interação inicial para tocar.");
@@ -40,16 +58,38 @@ function gerenciarMusica(musicaDesejada) {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   
-  // Inicialização dos áudios nativos
+  // Inicialização dos áudios nativos de Star Wars
   somTatooine = new Audio('audios/tatooine.mp3');
   somImperial = new Audio('audios/imperial.mp3');
-  somMilano = new Audio('audios/milano.mp3');
-  somCassette = new Audio('audios/cassette.mp3');
-  
   somTatooine.loop = true;
   somImperial.loop = true;
-  somMilano.loop = true;
-  somCassette.loop = true;
+  
+  // --- MONTAGEM DA PLAYLIST RETRÔ DOS GUARDIÕES ---
+  playlistGG = [
+    { audio: new Audio('audios/milano.mp3'), titulo: "Cherry Bomb" },
+    { audio: new Audio('audios/cassette.mp3'), titulo: "Come and Get Your Love" },
+    { audio: new Audio('audios/Hooked on a Feeling'), titulo: "Hooked on a Feeling" }, 
+    { audio: new Audio('audios/You Back.mp3'), titulo: "I Want You Back" },
+    { audio: new Audio('audios/Mr.Blue Sky'), titulo: "Mr.Blue Sky" }
+  ];
+  
+  // Configuração para detectar o fim de cada música e pular automaticamente
+  for (let i = 0; i < playlistGG.length; i++) {
+    // IMPORTANTE: Removemos o .loop = true para a música poder de fato terminar!
+    playlistGG[i].audio.loop = false; 
+
+    // Ouvinte de evento: Quando a música 'i' terminar...
+    playlistGG[i].audio.onended = function() {
+      // Avança o índice para a próxima música
+      indiceMusicaAtual = (indiceMusicaAtual + 1) % playlistGG.length;
+      
+      // Se o rádio ainda estiver ativo (tocando), dá play na próxima faixa automaticamente
+      if (tocandoGG) {
+        let proximaMusica = playlistGG[indiceMusicaAtual].audio;
+        proximaMusica.play().catch(e => console.log("Erro ao pular automaticamente:", e));
+      }
+    };
+  }
   
   // Inicialização do fundo estrelado padrão
   for (let i = 0; i < numEstrelas; i++) {
@@ -63,7 +103,7 @@ function setup() {
   }
 
   // Inicialização das partículas retrô para o menu dos Guardiões
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 50; i++) {
     partículasGuardiões.push({
       x: random(windowWidth),
       y: random(windowHeight),
@@ -72,6 +112,8 @@ function setup() {
       vel: random(1, 3)
     });
   }
+  trilhaMouse = []; // Garante que começa limpo
+
 }
 
 function mousePressed() {
@@ -180,6 +222,7 @@ function telaInicio() {
   }
 
   // Textos estáticos do Menu
+  
   textAlign(CENTER, CENTER); fill(255); textSize(42); textStyle(BOLD);
   text("A GALÁXIA NO CINEMA", width / 2, 80);
   textSize(16); textStyle(NORMAL); fill(180, 180, 220);
@@ -198,6 +241,41 @@ function telaInicio() {
 function telaStarWarsHub() {
   gerenciarMusica(null); 
   desenharFundoEstrelas();
+  trilhaMouse.push({
+    x: mouseX,
+    y: mouseY,
+    alpha: 255, // Opacidade inicial (brilhante)
+    size: 10,   // Tamanho inicial
+    // Sorteia se a partícula vai ser Azul (Rebeldes) ou Vermelha (Império)
+    cor: random() > 0.5 ? color(0, 191, 255) : color(255, 0, 0)
+  });
+
+  // Limita o tamanho do array para não travar a memória (máximo 40 partículas)
+  while (trilhaMouse.length > 40) {
+    trilhaMouse.shift(); // Remove as mais antigas
+  }
+
+  // Percorre o array para atualizar e desenhar cada partícula
+  for (let i = 0; i < trilhaMouse.length; i++) {
+    let p = trilhaMouse[i];
+
+    // Atualiza a partícula (fading)
+    p.alpha -= 8; // Diminui opacidade lentamente
+    p.size *= 0.94; // Diminui o tamanho lentamente
+    
+    noStroke();
+    
+    // Define a cor e a opacidade atual da partícula
+    let c = p.cor;
+    fill(red(c), green(c), blue(c), p.alpha);
+
+    // Desenha a partícula (pode ser ellipse ou rect)
+    // Um leve blur/glow (brilho) deixa mais real:
+    drawingContext.shadowBlur = 15; // Intensidade do brilho
+    drawingContext.shadowColor = p.cor; // Cor do brilho
+    ellipse(p.x, p.y, p.size, p.size);
+    drawingContext.shadowBlur = 0; // Desliga o brilho para não poluir o resto
+  }
   desenharBotaoVoltar("inicio");
 
   // Laço de renderização e atualização das naves temáticas
@@ -205,30 +283,87 @@ function telaStarWarsHub() {
     nave.x += nave.velocidade;
     if (nave.x > width + 250) nave.x = -250; 
 
+    // Define a altura correta baseada no tipo da nave
+    if (nave.tipo === "xwing" || nave.tipo === "tiefighter") {
+      // Passando estritamente ENTRE o texto (0.36) e os botões (0.6)
+      nave.y = height * 0.48; 
+    } else if (nave.tipo === "falcon") {
+      // Passando ABAIXO dos botões (0.6)
+      nave.y = height * 0.78; 
+    }
+
+    // Efeito ondulatório suave no eixo Y
+    let oscilacaoY = sin(frameCount * 0.04 + nave.offset) * 15;
+    let posYAtual = nave.y + oscilacaoY;
+
+    // --- DESENHO VETORIAL DAS NAVES ---
     push();
-    // Aplica translação e um efeito ondulatório suave no eixo Y
-    translate(nave.x, nave.y + sin(frameCount * 0.04 + nave.offset) * 20); 
+    translate(nave.x, posYAtual); 
     scale(nave.tamanho);
     
     if (nave.tipo === "xwing") {
-      // Fuselagem e Asas da X-Wing em vetor proporcional
       fill(160, 165, 170); noStroke();
-      rect(-30, -5, 60, 10, 3); // Corpo principal
+      rect(-30, -5, 60, 10, 3); 
       fill(200, 50, 50);
-      rect(10, -4, 12, 8); // Detalhes vermelhos
+      rect(10, -4, 12, 8); 
       stroke(130, 135, 140); strokeWeight(4);
-      line(-15, -22, 10, -5); line(-15, 22, 10, 5); // Par de asas duplas
-      stroke(255, 0, 0); strokeWeight(2);
-      line(-30, -3, -45, -3); // Rastro de propulsão a laser traseiro
-    } else if (nave.tipo === "falcon") {
-      // Design achatado característico da Millennium Falcon
+      line(-15, -22, 10, -5); line(-15, 22, 10, 5); 
+      stroke(255, 50, 50, 150); strokeWeight(2);
+      line(-30, 0, -50, 0); // Rastro do motor
+    } 
+    else if (nave.tipo === "tiefighter") {
+      let tomCinza = 140;
+      stroke(tomCinza - 25); fill(tomCinza); strokeWeight(1);
+      rect(-18, -22, 4, 44, 1); 
+      rect(14, -22, 4, 44, 1);  
+      line(-14, 0, -6, 0);       
+      line(6, 0, 14, 0);
+      ellipse(0, 0, 12, 12);     
+      fill(25, 35, 45); ellipse(0, 0, 6, 6);       
+    } 
+    else if (nave.tipo === "falcon") {
       fill(180, 185, 190); noStroke();
-      ellipse(0, 0, 65, 60); // Disco central
-      rect(20, -12, 25, 24); // Mandíbulas frontais
-      fill(50, 60, 75);
-      rect(-10, -31, 15, 8); // Cabine lateral descentralizada
+      ellipse(0, 0, 65, 60); 
+      rect(20, -12, 25, 24); 
+      fill(50, 60, 75); rect(-10, -31, 15, 8); 
       stroke(0, 191, 255); strokeWeight(3);
-      line(-32, -10, -32, 10); // Escape azul dos motores hiperpropulsores
+      line(-32, -10, -32, 10); // Rastro azul do motor
+    }
+    pop();
+  
+
+    // --- DESENHO DAS NAVES ---
+    push();
+    translate(nave.x, posYAtual); 
+    scale(nave.tamanho);
+    
+    if (nave.tipo === "xwing") {
+      fill(160, 165, 170); noStroke();
+      rect(-30, -5, 60, 10, 3); 
+      fill(200, 50, 50);
+      rect(10, -4, 12, 8); 
+      stroke(130, 135, 140); strokeWeight(4);
+      line(-15, -22, 10, -5); line(-15, 22, 10, 5); 
+      stroke(255, 50, 50, 150); strokeWeight(2);
+      line(-30, 0, -50, 0); 
+    } 
+    else if (nave.tipo === "tiefighter") {
+      let tomCinza = 140;
+      stroke(tomCinza - 25); fill(tomCinza); strokeWeight(1);
+      rect(-18, -22, 4, 44, 1); 
+      rect(14, -22, 4, 44, 1);  
+      line(-14, 0, -6, 0);       
+      line(6, 0, 14, 0);
+      ellipse(0, 0, 12, 12);     
+      fill(25, 35, 45); ellipse(0, 0, 6, 6);       
+    } 
+    else if (nave.tipo === "falcon") {
+      fill(180, 185, 190); noStroke();
+      ellipse(0, 0, 65, 60); 
+      rect(20, -12, 25, 24); 
+      fill(50, 60, 75); rect(-10, -31, 15, 8); 
+      stroke(0, 191, 255); strokeWeight(3);
+      line(-32, -10, -32, 10); 
     }
     pop();
   }
@@ -269,8 +404,152 @@ function telaGuardiansHub() {
     
     rect(p.x, p.y, p.w, p.h, 2);
   }
+  // A cada 25 frames, gera um novo anel de energia no centro da tela
+  if (frameCount % 25 === 0) {
+    aneisPortal.push({
+      diametro: 10,
+      velocidade: 4, // Velocidade de expansão do círculo
+      alpha: 255,    // Opacidade máxima inicial
+      // Alterna entre as cores marcantes dos Guardiões (Rosa Choque ou Ciano Neon)
+      cor: random() > 0.5 ? color(236, 64, 122) : color(0, 229, 255)
+    });
+  }
+
+  // Percorre e atualiza os anéis de trás para a frente
+  for (let i = aneisPortal.length - 1; i >= 0; i--) {
+    let anel = aneisPortal[i];
+    
+    anel.diametro += anel.velocidade; // O círculo expande
+    anel.alpha -= 1.8;                // Vai sumindo conforme cresce
+
+    // Desenha o contorno do anel luminoso com efeito neon
+    noFill();
+    stroke(red(anel.cor), green(anel.cor), blue(anel.cor), anel.alpha);
+    strokeWeight(4); // Linha espessa para destacar o portal
+    
+    // Ativa um efeito leve de brilho/glow usando o canvas 2D do navegador
+    drawingContext.shadowBlur = 20;
+    drawingContext.shadowColor = anel.cor;
+    
+    // Desenha o anel exatamente no centro do Canvas
+    ellipse(width / 2, height * 0.5, anel.diametro, anel.diametro * 0.6); // Multiplicar por 0.6 dá uma perspetiva oval/3D achatada
+    
+    // Desliga o brilho para não interferir na renderização do restante do menu
+    drawingContext.shadowBlur = 0;
+
+    // Se o anel ficar completamente invisível, remove do array para economizar memória
+    if (anel.alpha <= 0) {
+      aneisPortal.splice(i, 1);
+    }
+  }
+  push();
+  push();
+  let numBarras = 30; // Quantidade de barras verticais do equalizador
+  let larguraBarra = width / numBarras;
+  
+  for (let i = 0; i < numBarras; i++) {
+    // Usa noise para fazer as barras subirem e descerem de forma suave e rítmica
+    let alturaBarra = noise(frameCount * 0.05 + i * 0.2) * 90;
+    
+    // Alterna as cores das barras entre azul neon e rosa choque para combinar com o menu
+    let corBarra = (i % 2 === 0) ? color(0, 229, 255, 180) : color(236, 64, 122, 180);
+    
+    // Aplica o efeito de brilho neon nas barras
+    drawingContext.shadowBlur = 10;
+    drawingContext.shadowColor = corBarra;
+    
+    fill(corBarra);
+    noStroke();
+    
+    // Desenha a barra a partir da base da tela (height) para cima
+    rect(i * larguraBarra + 2, height - alturaBarra, larguraBarra - 4, alturaBarra, 3);
+  }
+  drawingContext.shadowBlur = 0; // Desliga o brilho para o resto dos elementos
+  pop();
+  // Posiciona o Groot no canto inferior direito da tela
+  let grootX = width * 0.88;
+  let grootY = height * 0.82;
+  translate(grootX, grootY);
+
+  // Variáveis matemáticas para criar o gingado da dança rítmica
+  let balancoCorpo = sin(frameCount * 0.08) * 8;
+  let balancoCabeca = sin(frameCount * 0.08 + 0.3) * 0.15;
+  let balancoBracoE = sin(frameCount * 0.12) * 15;
+  let balancoBracoD = cos(frameCount * 0.12) * 15;
+
+  // 1. O VASO BRANCO (Estático)
+  fill(240); noStroke();
+  quad(-25, 35, 25, 35, 18, 75, -18, 75); // Corpo do vaso
+  rect(-28, 25, 56, 10, 2); // Borda de cima do vaso
+
+  // 2. O TRONCO/CORPO (Balança para os lados)
+  stroke(110, 75, 45); strokeWeight(10); strokeJoin(ROUND);
+  noFill();
+  beginShape();
+  vertex(0, 30);
+  vertex(balancoCorpo * 0.5, 0); // O meio do corpo desloca ligeiramente
+  vertex(balancoCorpo, -35);    // Onde conecta o pescoço
+  endShape();
+
+  // 3. BRAÇO ESQUERDO (Gesticula para cima e para baixo)
+  push();
+  translate(balancoCorpo * 0.5, -5);
+  stroke(120, 85, 50); strokeWeight(5);
+  line(0, 0, -22, -15 + balancoBracoE);
+  // Folhinha no braço
+  fill(76, 175, 80); noStroke();
+  ellipse(-22, -15 + balancoBracoE, 6, 4);
+  pop();
+
+  // 4. BRAÇO DIREITO
+  push();
+  translate(balancoCorpo * 0.5, -5);
+  stroke(120, 85, 50); strokeWeight(5);
+  line(0, 0, 22, -12 + balancoBracoD);
+  // Folhinha no braço
+  fill(76, 175, 80); noStroke();
+  ellipse(22, -12 + balancoBracoD, 6, 4);
+  pop();
+
+  // 5. A CABEÇA (Fica no topo do tronco e rotaciona no ritmo)
+  push();
+  translate(balancoCorpo, -40);
+  rotate(balancoCabeca);
+  
+  // Rosto de madeira do Groot
+  fill(130, 90, 55); noStroke();
+  rect(-16, -25, 32, 28, 4);
+  // Detalhes de galhos no topo da cabeça
+  triangle(-16, -24, -8, -24, -14, -32);
+  triangle(-6, -24, 6, -24, 0, -34);
+  triangle(8, -24, 16, -24, 13, -31);
+
+  // Olhos pretos fofos
+  fill(20);
+  ellipse(-6, -10, 5, 5);
+  ellipse(6, -10, 5, 5);
+  // Brilho nos olhos
+  fill(255);
+  ellipse(-5, -11, 1.5, 1.5);
+  ellipse(7, -11, 1.5, 1.5);
+
+  // Sorriso minimalista
+  noFill(); stroke(60, 35, 15); strokeWeight(2);
+  arc(0, -2, 8, 6, 0, PI);
+
+  // Folhinha brotando na cabeça dele
+  push();
+  translate(6, -28);
+  fill(139, 195, 74); noStroke();
+  ellipse(0, 0, 7, 4);
+  pop();
+
+  pop(); // Fim da Cabeça
+  pop(); // Fim do Groot
+  // =================================================================
 
   // Elementos do Menu Guardiões
+  noStroke();
   fill(236, 64, 122); textAlign(CENTER, CENTER); textSize(width * 0.045); textStyle(BOLD);
   text("GUARDIÕES DA GALÁXIA", width / 2, height * 0.18);
   fill(220); textSize(max(14, width * 0.018)); textStyle(NORMAL);
